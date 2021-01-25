@@ -1,0 +1,10 @@
+CREATE TABLE students (
+     student      text not NULL,
+     email        text not NULL primary key,
+     slack        text,
+     github       text,
+     paid         text,
+     last_course  text,
+     finished     text,
+     );
+
