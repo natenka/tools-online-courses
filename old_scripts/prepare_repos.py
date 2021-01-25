@@ -21,25 +21,47 @@ create_template = {
 DB = "students_db.db"
 
 
+def call_command(command, verbose=True):
+    """
+    Функция вызывает указанную command через subprocess
+    и выводит stdout и stderr, если флан verbose=True.
+    """
+    result = subprocess.run(
+        command,
+        shell=True,
+        encoding="utf-8",
+        stdout=subprocess.PIPE,
+    )
+    stdout = result.stdout
+    if verbose:
+        print("#" * 20, command)
+        if stdout:
+            print(stdout)
+    return stdout
+
+
+def invite_collab_to_repo(github_obj, repo, collaborator):
+    repo_name = f"pyneng/{repo}"
+
+    try:
+        repo_obj = github_obj.get_repo(repo_name)
+    except github.GithubException:
+        raise ValueError(
+            "Аутентификация по токену не прошла"
+        )
+    else:
+        repo_obj.add_to_collaborators(collaborator)
+
+
 def invite_collaborators():
-    username = 'pyneng'
-    password = os.environ.get('GITHUB_PASS')
-    if not password:
-        password = getpass('Пароль для моего акаунта pyneng')
-
-
-    api_link = 'https://api.github.com/repos/pyneng/{}/collaborators/{}?permission=none'
+    token = os.environ.get("GITHUB_TOKEN")
+    github_obj = github.Github(token)
 
     conn = sqlite3.connect(DB)
     query = 'select repo_name, github from students'
-    for row in conn.execute(query):
-        repo, user = row
-        resp = requests.put(api.format(repo, user), auth=(username, password))
-        if resp.status_code == 201:
-            print('OK', repo)
-        else:
-            print('NOT OK', repo)
-        time.sleep(5)
+    for repo, user in conn.execute(query):
+        invite_collab_to_repo(g, repo, user)
+        time.sleep(2)
 
 
 def clone_repos():
@@ -47,27 +69,22 @@ def clone_repos():
     query = 'select repo_name from students'
     for row in conn.execute(query):
         repo_name = row[0]
-        subprocess.run(
-            f'git clone ssh://git@github.com/pyneng/{repo_name}.git', shell=True)
+        call_command(
+            f'git clone ssh://git@github.com/pyneng/{repo_name}.git'
+        )
         print(repo_name)
 
 
 def create_email_repo_map():
     repos = {}
     conn = sqlite3.connect("students_db.db")
-    conn.row_factory = sqlite3.Row
     all_students = "select email, student from students order by student"
 
-    for st in conn.execute(all_students):
-        st_name = st["student"]
-        st_email = st["email"]
+    for st_email, st_name in conn.execute(all_students):
         st_name_translit = translit(st_name.strip().lower(), "ru", reversed=True)
         repo_name = f"online-10-{st_name_translit.replace(' ', '-')}"
         repos[st_email] = repo_name.replace("j", "y").replace("'", "")
     return repos
-
-
-repos_done = {}
 
 
 def add_repo_to_db(repos):
@@ -89,33 +106,33 @@ def create_repos(repos):
     repo = user.create_repo(**create_template)
     """
     failed_to_create = {}
-    username = "pyneng"
-    password = os.environ.get("GITHUB_PASS")
-    if not password:
-        password = getpass("Пароль для моего акаунта pyneng")
+
+    token = os.environ.get("GITHUB_TOKEN")
+    g = github.Github(token)
+    pyneng_user = g.get_user()
 
     conn = sqlite3.connect("students_db.db")
     get_st_by_email = "select * from students where email = ?"
     for email, repo_name in repos.items():
         create_template["name"] = repo_name
-        resp = requests.post(
-            "https://api.github.com/user/repos",
-            data=json.dumps(create_template),
-            auth=(username, password),
-        )
-        if resp.status_code == 201:
-            print("################ OK", repo_name)
-        else:
+        try:
+            repo = user.create_repo(**create_template)
+        except github.GithubException:
             failed_to_create[email] = repo_name
+        else:
+            print("################ OK", repo_name)
         time.sleep(3)
-    conn.commit()
+
     conn.close()
+
     if failed_to_create:
         print("### не получилось создать репозиторий")
         pprint(failed_to_create)
 
 
 if __name__ == "__main__":
+    repos_done = {}
+
     repos_all = create_email_repo_map()
     # for email, repo in repos_all.items():
     #    print(f"{email:35} {repo}")
