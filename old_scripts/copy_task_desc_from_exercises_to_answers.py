@@ -31,7 +31,7 @@ for d in dirs:
                 m = re.search(r'""".+?"""', src_desc, re.DOTALL)
                 task_description = m.group()
                 dest_read = dst.read()
-                replaced_text = re.sub(r'""".+?"""', task_description, dest_read, flags=re.DOTALL)
+                replaced_text = re.sub(r'""".+?"""', task_description, dest_read, count=1, flags=re.DOTALL)
             with open(f"{dpath}{d}/{task}", "w") as dst_wr:
                 dst_wr.write(replaced_text)
             print(f"Task {task} DONE")
