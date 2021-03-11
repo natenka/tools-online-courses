@@ -42,9 +42,9 @@ task_dirs = [
 ]
 
 
-class PtestError(Exception):
+class PynengError(Exception):
     """
-    Ошибка в использовании/работе скрипта ptest
+    Ошибка в использовании/работе скрипта pyneng
     """
 
 
@@ -155,7 +155,7 @@ def post_comment_to_last_commit(msg, repo, delta_days=14):
         g = github.Github(token)
         repo_obj = g.get_repo(repo_name)
     except github.GithubException:
-        raise PtestError(red(
+        raise PynengError(red(
             "Аутентификация по токену не прошла. Задание не сдано на проверку"
         ))
     else:
@@ -172,7 +172,7 @@ def post_comment_to_last_commit(msg, repo, delta_days=14):
 def send_tasks_to_check(passed_tasks):
     """
     Функция отбирает все задания, которые прошли
-    тесты при вызове ptest, делает git add для файлов заданий,
+    тесты при вызове pyneng, делает git add для файлов заданий,
     git commit с сообщением какие задания сделаны
     и git push для добавления изменений на Github.
     После этого к этому коммиту добавляется сообщение о том,
@@ -192,16 +192,16 @@ def send_tasks_to_check(passed_tasks):
     if repo_match:
         repo = repo_match.group()
     else:
-        raise PtestError(red(
+        raise PynengError(red(
             "Не найден репозиторий online-10-имя-фамилия. "
-            "ptest надо вызывать в репозитории подготовленном для курса."
+            "pyneng надо вызывать в репозитории подготовленном для курса."
         ))
     post_comment_to_last_commit(message, repo)
 
 
 def current_chapter_id():
     """
-    Функция возвращает номер текущего раздела, где вызывается ptest.
+    Функция возвращает номер текущего раздела, где вызывается pyneng.
     """
     pth = str(pathlib.Path().absolute())
     last_dir = os.path.split(pth)[-1]
@@ -261,7 +261,7 @@ def copy_answers(passed_tasks):
         os.chdir(homedir)
         shutil.rmtree("pyneng-answers", onerror=remove_readonly)
     else:
-        raise PtestError(red("Не получилось скопировать ответы."))
+        raise PynengError(red("Не получилось скопировать ответы."))
     os.chdir(pth)
 
 
@@ -325,16 +325,16 @@ def cli(tasks, disable_verbose, answer, check, debug):
     Примеры запуска:
 
     \b
-        ptest            запустить все тесты для текущего раздела
-        ptest 1,2a,5     запустить тесты для заданий 1, 2a и 5
-        ptest 1,2a-c,5   запустить тесты для заданий 1, 2a, 2b, 2c и 5
-        ptest 1,2*       запустить тесты для заданий 1, все задания 2 с буквами и без
-        ptest 1,3-5      запустить тесты для заданий 1, 3, 4, 5
-        ptest 1-5 -a     запустить тесты и записать ответы на задания,
+        pyneng            запустить все тесты для текущего раздела
+        pyneng 1,2a,5     запустить тесты для заданий 1, 2a и 5
+        pyneng 1,2a-c,5   запустить тесты для заданий 1, 2a, 2b, 2c и 5
+        pyneng 1,2*       запустить тесты для заданий 1, все задания 2 с буквами и без
+        pyneng 1,3-5      запустить тесты для заданий 1, 3, 4, 5
+        pyneng 1-5 -a     запустить тесты и записать ответы на задания,
                          которые прошли тесты, в файлы answer_task_x.py
-        ptest 1-5 -c     запустить тесты и сдать на проверку задания,
+        pyneng 1-5 -c     запустить тесты и сдать на проверку задания,
                          которые прошли тесты.
-        ptest -a -c      запустить все тесты, записать ответы на задания
+        pyneng -a -c      запустить все тесты, записать ответы на задания
                          и сдать на проверку задания, которые прошли тесты.
 
     Флаг -d отключает подробный вывод pytest, который включен по умолчанию.
@@ -342,7 +342,7 @@ def cli(tasks, disable_verbose, answer, check, debug):
     Флаг -c сдает на проверку задания (пишет комментарий на github)
     для которых прошли тесты.
     Для сдачи заданий на проверку надо сгенерировать токен github.
-    Подробнее в инструкции: https://pyneng.github.io/docs/ptest-prepare/
+    Подробнее в инструкции: https://pyneng.github.io/docs/pyneng-prepare/
     """
     if not debug:
         sys.excepthook = exception_handler
@@ -378,10 +378,10 @@ def cli(tasks, disable_verbose, answer, check, debug):
         if check:
             token = os.environ.get("GITHUB_TOKEN")
             if not token:
-                raise PtestError(
+                raise PynengError(
                     red(
                         "Для сдачи заданий на проверку надо сгенерировать токен github. "
-                        "Подробнее в инструкции: https://pyneng.github.io/docs/ptest-prepare/"
+                        "Подробнее в инструкции: https://pyneng.github.io/docs/pyneng-prepare/"
                     )
                 )
             send_tasks_to_check(passed_tasks)
