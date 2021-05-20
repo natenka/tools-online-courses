@@ -171,11 +171,11 @@ def run_tests(folder_number, task_list):
 
 def post_comment_to_last_commit(msg, delta_days=14):
     git_remote = call_command("git remote -v")
-    repo_match = re.search(r"online-\d+-\w+-\w+", git_remote)
+    repo_match = re.search(r"advpyneng-\d+-\w+-\w+", git_remote)
     if repo_match:
         repo = repo_match.group()
     else:
-        raise ValueError("Не найден репозиторий online-10-имя-фамилия. ")
+        raise ValueError("Не найден репозиторий advpyneng-10-имя-фамилия. ")
 
     token = os.environ.get("GITHUB_TOKEN")
     since = datetime.now() - timedelta(days=delta_days)
@@ -197,12 +197,6 @@ def post_comment_to_last_commit(msg, delta_days=14):
 def upload_checked_tasks(tasks):
     message = (
         f"Проверены задания {tasks}. Всё отлично!\n"
-        "Не забудьте посмотреть варианты решения\n"
-        "```\n"
-        "ptest -a\n"
-        "```\n\n"
-        "Как посмотреть проверенные задания на github: https://pyneng.github.io/docs/task-check-github/\n"
-        "в командной строке: https://pyneng.github.io/docs/checked-tasks-git/\n"
     )
     c_message = f"Проверены задания {tasks}"
     call_command("git add .")
