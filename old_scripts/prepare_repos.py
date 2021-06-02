@@ -1,4 +1,5 @@
 import subprocess
+import github
 import time
 import sqlite3
 import os
@@ -15,7 +16,6 @@ create_template = {
     "has_wiki": False,
     "name": None,
     "private": True,
-    "default_branch": "main",
 }
 
 DB = "students_db.db"
@@ -60,8 +60,11 @@ def invite_collaborators():
     conn = sqlite3.connect(DB)
     query = 'select repo_name, github from students'
     for repo, user in conn.execute(query):
-        invite_collab_to_repo(g, repo, user)
-        time.sleep(2)
+        if user:
+            invite_collab_to_repo(g, repo, user)
+            time.sleep(2)
+        else:
+            print(f"No github user for {repo}")
 
 
 def clone_repos():
@@ -81,9 +84,9 @@ def create_email_repo_map():
     all_students = "select email, student from students order by student"
 
     for st_email, st_name in conn.execute(all_students):
-        st_name_translit = translit(st_name.strip().lower(), "ru", reversed=True)
-        repo_name = f"online-10-{st_name_translit.replace(' ', '-')}"
-        repos[st_email] = repo_name.replace("j", "y").replace("'", "")
+        st_name = st_name.lower()
+        repo_name = f"online-11-{st_name.replace(' ', '-')}"
+        repos[st_email] = repo_name
     return repos
 
 
@@ -116,7 +119,7 @@ def create_repos(repos):
     for email, repo_name in repos.items():
         create_template["name"] = repo_name
         try:
-            repo = user.create_repo(**create_template)
+            repo = pyneng_user.create_repo(**create_template)
         except github.GithubException:
             failed_to_create[email] = repo_name
         else:
@@ -138,3 +141,4 @@ if __name__ == "__main__":
     #    print(f"{email:35} {repo}")
     create_repos(repos_all)
     add_repo_to_db(repos_all)
+    #invite_collaborators()
