@@ -12,6 +12,7 @@ import pytest
 import github
 
 
+DEFAULT_BRANCH = "main"
 chapter_to_folder_map = {
     "4": "04_data_structures",
     "5": "05_basic_scripts",
@@ -86,7 +87,7 @@ def get_chapter_to_folder_map(path):
     return {int(d.split("_")[0]): d for d in all_dirs if d[0].isdigit()}
 
 
-def git_checkout(branch="master"):
+def git_checkout(branch=DEFAULT_BRANCH):
     call_command("git checkout {}".format(branch))
 
 
@@ -107,14 +108,14 @@ def copy_tasks_to_task_check(folder_id, task_list):
     path = f"exercises/{folder_name}/"
     if task_list == "all":
         # checkout folder
-        call_command(f"git checkout master {path}")
+        call_command(f"git checkout {DEFAULT_BRANCH} {path}")
     else:
         tasks = []
         for t_glob in task_list:
             tasks.extend(glob(f"exercises/{folder_name}/{t_glob}"))
 
         for task in tasks:
-            call_command(f"git checkout master {task}")
+            call_command(f"git checkout {DEFAULT_BRANCH} {task}")
 
     call_command("git status")
     try:
@@ -201,7 +202,7 @@ def upload_checked_tasks(tasks):
         f"Проверены задания {tasks}. Всё отлично!\n"
         "Не забудьте посмотреть варианты решения\n"
         "```\n"
-        "ptest -a\n"
+        "pyneng -a\n"
         "```\n\n"
         "Как посмотреть проверенные задания на github: https://pyneng.github.io/docs/task-check-github/\n"
         "в командной строке: https://pyneng.github.io/docs/checked-tasks-git/\n"
@@ -217,7 +218,8 @@ def upload_checked_tasks(tasks):
 @click.argument("folder_number", nargs=-1)
 @click.option("--tasks", "-t", default="all")
 @click.option("--check-done", "-c", help="Все проверено, запушить на github")
-def cli(folder_number, tasks, check_done):
+@click.option("--default-branch", "-b", default="main")
+def cli(folder_number, tasks, check_done, default_branch):
     """
     Примеры запуска:
 
@@ -227,11 +229,14 @@ def cli(folder_number, tasks, check_done):
     check 5 -t 1,2*     запустить проверку для заданий 5.1, все задания 5.2 с буквами и без
     check 3 4 5         запустить проверки для всех заданий 3, 4, 5 разделов
     """
+    global DEFAULT_BRANCH
+    if default_branch != "main":
+        DEFAULT_BRANCH = default_branch
     if check_done:
         upload_checked_tasks(check_done)
 
     else:
-        git_checkout("master")
+        git_checkout(DEFAULT_BRANCH)
         git_pull()
         git_create_task_check()
         git_checkout("task_check")
