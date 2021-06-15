@@ -12,6 +12,7 @@ import stat
 import shutil
 from datetime import datetime, timedelta
 from glob import glob
+import shutil
 
 
 import click
@@ -348,10 +349,11 @@ def copy_answer_files(passed_tasks, pth):
         task_name = test_file.replace("test_", "")
         answer_name = test_file.replace("test_", "answer_")
         if not os.path.exists(f"{pth}/{answer_name}"):
-            call_command(
-                f"cp {task_name} {pth}/{answer_name}",
-                verbose=False,
-            )
+            #call_command(
+            #    f"cp {task_name} {pth}/{answer_name}",
+            #    verbose=False,
+            #)
+            shutil.copy2(task_name, f"{pth}/{answer_name}")
 
 
 @click.command(
