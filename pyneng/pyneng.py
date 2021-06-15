@@ -348,6 +348,7 @@ def copy_answer_files(passed_tasks, pth):
         task_name = test_file.replace("test_", "")
         task_name = re.search(r"task_\w+\.py", task_name).group()
         answer_name = test_file.replace("test_", "answer_")
+        answer_name = re.search(r"answer_task_\w+\.py", answer_name).group()
         if not os.path.exists(f"{pth}/{answer_name}"):
             #call_command(
             #    f"cp {task_name} {pth}/{answer_name}",
