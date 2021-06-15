@@ -12,6 +12,7 @@ import stat
 import shutil
 from datetime import datetime, timedelta
 from glob import glob
+import shutil
 
 
 import click
@@ -304,7 +305,7 @@ def copy_answers(passed_tasks):
     homedir = pathlib.Path.home()
     os.chdir(homedir)
     returncode, stderr = call_command(
-        "git clone https://github.com/natenka/pyneng-answers",
+        "git clone --depth=1 https://github.com/natenka/pyneng-answers",
         verbose=False,
         return_stderr=True,
     )
