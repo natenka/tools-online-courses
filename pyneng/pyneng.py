@@ -304,7 +304,7 @@ def copy_answers(passed_tasks):
     homedir = pathlib.Path.home()
     os.chdir(homedir)
     if os.path.exists("pyneng-answers"):
-        shutil.rmtree("pyneng-answers")
+        shutil.rmtree("pyneng-answers", onerror=remove_readonly)
     returncode, stderr = call_command(
         "git clone https://github.com/natenka/pyneng-answers",
         verbose=False,
