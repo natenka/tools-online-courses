@@ -225,7 +225,14 @@ def send_tasks_to_check(passed_tasks):
     call_command("git push origin main")
 
     repo = get_repo()
-    post_comment_to_last_commit(message, repo)
+    last = post_comment_to_last_commit(message, repo)
+    commit_number = re.search(r'"(\w+)"', str(last)).group(1)
+    print(
+        green(
+            f"Задание успешно сдано на проверку. Комментарий о сдаче задания "
+            f"можно посмотреть по ссылке https://github.com/pyneng/{repo}/commit/{commit_number}"
+        )
+    )
 
 
 def test_run_for_github_token():
