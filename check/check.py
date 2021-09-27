@@ -30,6 +30,7 @@ chapter_to_folder_map = {
     "22": "22_oop_basics",
     "23": "23_oop_special_methods",
     "24": "24_oop_inheritance",
+    "25": "25_db",
 }
 
 
