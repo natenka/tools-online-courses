@@ -12,10 +12,11 @@ import pytest
 import github
 
 
+DEFAULT_BRANCH = "main"
 chapter_to_folder_map = {
-    "1": "01_type_annotations",
-    "3": "03_click",
-    "4": "04_pytest_basics",
+    "1": "01_pytest_basics",
+    "2": "02_type_annotations",
+    "4": "04_click",
     "5": "05_logging",
     "7": "07_closure",
     "8": "08_decorators",
@@ -84,7 +85,7 @@ def get_chapter_to_folder_map(path):
     return {int(d.split("_")[0]): d for d in all_dirs if d[0].isdigit()}
 
 
-def git_checkout(branch="master"):
+def git_checkout(branch=DEFAULT_BRANCH):
     call_command("git checkout {}".format(branch))
 
 
@@ -105,14 +106,14 @@ def copy_tasks_to_task_check(folder_id, task_list):
     path = f"exercises/{folder_name}/"
     if task_list == "all":
         # checkout folder
-        call_command(f"git checkout master {path}")
+        call_command(f"git checkout {DEFAULT_BRANCH} {path}")
     else:
         tasks = []
         for t_glob in task_list:
             tasks.extend(glob(f"exercises/{folder_name}/{t_glob}"))
 
         for task in tasks:
-            call_command(f"git checkout master {task}")
+            call_command(f"git checkout {DEFAULT_BRANCH} {task}")
 
     call_command("git status")
     try:
@@ -175,7 +176,7 @@ def post_comment_to_last_commit(msg, delta_days=14):
     if repo_match:
         repo = repo_match.group()
     else:
-        raise ValueError("Не найден репозиторий advpyneng-10-имя-фамилия. ")
+        raise ValueError("Не найден репозиторий advpyneng-3-имя-фамилия. ")
 
     token = os.environ.get("GITHUB_TOKEN")
     since = datetime.now() - timedelta(days=delta_days)
@@ -196,7 +197,9 @@ def post_comment_to_last_commit(msg, delta_days=14):
 
 def upload_checked_tasks(tasks):
     message = (
-        f"Проверены задания {tasks}. Всё отлично!\n"
+        f"Проверены задания {tasks}. Всё отлично!\n\n"
+        "Как посмотреть проверенные задания на github: https://advpyneng.github.io/docs/task-check-github/\n"
+        "в командной строке: https://advpyneng.github.io/docs/checked-tasks-git/\n"
     )
     c_message = f"Проверены задания {tasks}"
     call_command("git add .")
@@ -209,21 +212,25 @@ def upload_checked_tasks(tasks):
 @click.argument("folder_number", nargs=-1)
 @click.option("--tasks", "-t", default="all")
 @click.option("--check-done", "-c", help="Все проверено, запушить на github")
-def cli(folder_number, tasks, check_done):
+@click.option("--default-branch", "-b", default=DEFAULT_BRANCH)
+def cli(folder_number, tasks, check_done, default_branch):
     """
     Примеры запуска:
 
     \b
-    check 7 -t 1,2a,5   запустить проверку для заданий 7.1, 7.2a и 7.5
-    check 5             запустить проверку для заданий 5 раздела
-    check 5 -t 1,2*     запустить проверку для заданий 5.1, все задания 5.2 с буквами и без
-    check 3 4 5         запустить проверки для всех заданий 3, 4, 5 разделов
+    acheck 7 -t 1,2a,5   запустить проверку для заданий 7.1, 7.2a и 7.5
+    acheck 5             запустить проверку для заданий 5 раздела
+    acheck 5 -t 1,2*     запустить проверку для заданий 5.1, все задания 5.2 с буквами и без
+    acheck 3 4 5         запустить проверки для всех заданий 3, 4, 5 разделов
     """
+    global DEFAULT_BRANCH
+    if default_branch != "main":
+        DEFAULT_BRANCH = default_branch
     if check_done:
         upload_checked_tasks(check_done)
 
     else:
-        git_checkout("master")
+        git_checkout(DEFAULT_BRANCH)
         git_pull()
         git_create_task_check()
         git_checkout("task_check")
