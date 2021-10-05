@@ -22,6 +22,7 @@ import requests
 import github
 
 
+DEFAULT_BRANCH = "main"
 task_dirs = [
     "04_data_structures",
     "05_basic_scripts",
@@ -209,7 +210,7 @@ def send_tasks_to_check(passed_tasks):
         if "20" in task or "21" in task:
             call_command("git add templates")
     call_command(f'git commit -m "{message}"')
-    call_command("git push origin main")
+    call_command(f"git push origin {DEFAULT_BRANCH}")
 
     git_remote = call_command("git remote -v", return_stdout=True)
     repo_match = re.search(r"online-\d+-\w+-\w+", git_remote)
@@ -241,7 +242,7 @@ def dummy_send_tasks_to_check(tasks):
 
     call_command(f"git add .")
     call_command(f'git commit -m "{message}"')
-    call_command("git push origin main")
+    call_command(f"git push origin {DEFAULT_BRANCH}")
 
     git_remote = call_command("git remote -v", return_stdout=True)
     repo_match = re.search(r"online-\d+-\w+-\w+", git_remote)
@@ -389,7 +390,8 @@ def copy_answer_files(passed_tasks, pth):
     ),
 )
 @click.option("--debug", is_flag=True, help="Показывать traceback исключений")
-def cli(tasks, disable_verbose, answer, check, debug):
+@click.option("--default-branch", "-b", default="main")
+def cli(tasks, disable_verbose, answer, check, debug, default_branch):
     """
     Запустить тесты для заданий TASKS. По умолчанию запустятся все тесты.
 
@@ -415,6 +417,9 @@ def cli(tasks, disable_verbose, answer, check, debug):
     Для сдачи заданий на проверку надо сгенерировать токен github.
     Подробнее в инструкции: https://pyneng.github.io/docs/pyneng-prepare/
     """
+    global DEFAULT_BRANCH
+    if default_branch != "main":
+        DEFAULT_BRANCH = default_branch
     token_error = red(
         "Для сдачи заданий на проверку надо сгенерировать токен github. "
         "Подробнее в инструкции: https://pyneng.github.io/docs/pyneng-prepare/"

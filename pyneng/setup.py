@@ -2,13 +2,13 @@ from setuptools import setup
 
 setup(
     name="pyneng",
-    version="1.3",
+    version="1.4",
     py_modules=["pyneng"],
     install_requires=[
         "Click",
         "pyyaml",
         "pytest",
-        "pytest-clarity==0.3.0a0",
+        "pytest-clarity",
         "pytest-json-report",
         "requests",
         "PyGithub",
