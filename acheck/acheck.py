@@ -148,7 +148,7 @@ def run_tests(folder_number, task_list):
         task_path = f"exercises/{folder_name}/"
         os.chdir(task_path)
 
-        pytest_args = ["--disable-warnings", "--no-hints", "--tb=no"]
+        pytest_args = ["--disable-warnings", "--tb=no"]
         if task_list == "all":
             pytest.main(pytest_args)
         else:
