@@ -23,7 +23,7 @@ import github
 
 
 DEFAULT_BRANCH = "main"
-task_dirs = [
+TASK_DIRS = [
     "04_data_structures",
     "05_basic_scripts",
     "06_control_structures",
@@ -41,6 +41,9 @@ task_dirs = [
     "23_oop_special_methods",
     "24_oop_inheritance",
     "25_db",
+]
+
+DB_TASK_DIRS = [
     "task_25_1",
     "task_25_2",
     "task_25_3",
@@ -49,7 +52,6 @@ task_dirs = [
     "task_25_5a",
     "task_25_6",
 ]
-
 
 class PynengError(Exception):
     """
@@ -81,7 +83,14 @@ class CustomTasksType(click.ParamType):
     и оставляет только те, что есть.
     """
 
+    name = "CustomTasksType"
+
     def convert(self, value, param, ctx):
+        # for some reason click can call this method with parsed args
+        # this allowes to return parsed value as is
+        if isinstance(value, tuple):
+            return value
+
         regex = (
             r"(?P<all>all)|"
             r"(?P<number_star>\d\*)|"
@@ -90,9 +99,9 @@ class CustomTasksType(click.ParamType):
             r"(?P<single_task>\d[a-i]?)"
         )
         current_chapter = current_dir_name()
-        if current_chapter not in task_dirs:
+        if current_chapter not in TASK_DIRS + DB_TASK_DIRS:
             task_dirs_line = "\n    ".join(
-                [d for d in task_dirs if not d.startswith("task")]
+                [d for d in TASK_DIRS if not d.startswith("task")]
             )
             self.fail(
                 red(
@@ -102,16 +111,16 @@ class CustomTasksType(click.ParamType):
             )
 
         tasks_list = re.split(r"[ ,]+", value)
-        if "25" in current_chapter:
-            return {25: tasks_list}
-
         current_chapter = current_chapter_id()
         test_files = []
+        task_files = []
         for task in tasks_list:
             match = re.fullmatch(regex, task)
             if match:
                 if task == "all":
-                    return value
+                    test_files = sorted(glob(f"test_task_{current_chapter}_*.py"))
+                    task_files = glob(f"task_{current_chapter}_*.py")
+                    break
                 else:
                     if match.group("letters_range"):
                         task = f"{task[0]}[{task[1:]}]"  # convert 1a-c to 1[a-c]
@@ -119,6 +128,7 @@ class CustomTasksType(click.ParamType):
                         task = f"[{task}]"  # convert 1-3 to [1-3]
 
                     test_files += glob(f"test_task_{current_chapter}_{task}.py")
+                    task_files += glob(f"task_{current_chapter}_{task}.py")
             else:
                 self.fail(
                     red(
@@ -126,7 +136,10 @@ class CustomTasksType(click.ParamType):
                         "Допустимые форматы: 1, 1a, 1b-d, 1*, 1-3"
                     )
                 )
-        return test_files
+        tasks_with_tests = set([test.replace("test_", "") for test in test_files])
+        tasks_without_tests = set(task_files) - tasks_with_tests
+        return sorted(test_files), sorted(tasks_without_tests)
+
 
 
 def call_command(command, verbose=True, return_stdout=False, return_stderr=False):
@@ -187,9 +200,24 @@ def post_comment_to_last_commit(msg, repo, delta_days=14):
             print("За указанный период времени не найдено коммитов")
         else:
             last.create_comment(msg)
+            return last
 
 
-def send_tasks_to_check(passed_tasks):
+def get_repo(search_pattern=r"online-\d+-\w+-\w+"):
+    git_remote = call_command("git remote -v", return_stdout=True)
+    repo_match = re.search(search_pattern, git_remote)
+    if repo_match:
+        repo = repo_match.group()
+        return repo
+    else:
+        raise PynengError(
+            red(
+                "Не найден репозиторий online-x-имя-фамилия. "
+                "pyneng надо вызывать в репозитории подготовленном для курса."
+            )
+        )
+
+def send_tasks_to_check(passed_tasks, git_add_all=False):
     """
     Функция отбирает все задания, которые прошли
     тесты при вызове pyneng, делает git add для файлов заданий,
@@ -198,7 +226,10 @@ def send_tasks_to_check(passed_tasks):
     После этого к этому коммиту добавляется сообщение о том,
     что задания сдаются на проверку с помощью функции post_comment_to_last_commit.
     """
-    ok_tasks = [test.replace("test_", "") for test in passed_tasks]
+    ok_tasks = [
+        re.sub(r".*(task_\d+_\d+.py)", r"\1", filename)
+        for filename in passed_tasks
+    ]
     tasks_num_only = sorted(
         [task.replace("task_", "").replace(".py", "") for task in ok_tasks]
     )
@@ -209,62 +240,48 @@ def send_tasks_to_check(passed_tasks):
         # добавление шаблонов для заданий jinja, textfsm
         if "20" in task or "21" in task:
             call_command("git add templates")
+        elif "25" in task:
+            call_command("git add .")
+    if git_add_all:
+        call_command("git add .")
     call_command(f'git commit -m "{message}"')
     call_command(f"git push origin {DEFAULT_BRANCH}")
 
-    git_remote = call_command("git remote -v", return_stdout=True)
-    repo_match = re.search(r"online-\d+-\w+-\w+", git_remote)
-    if repo_match:
-        repo = repo_match.group()
-    else:
-        raise PynengError(
-            red(
-                "Не найден репозиторий online-11-имя-фамилия. "
-                "pyneng надо вызывать в репозитории подготовленном для курса."
-            )
+    repo = get_repo()
+    last = post_comment_to_last_commit(message, repo)
+    commit_number = re.search(r'"(\w+)"', str(last)).group(1)
+    print(
+        green(
+            f"Задание успешно сдано на проверку. Комментарий о сдаче задания "
+            f"можно посмотреть по ссылке https://github.com/pyneng/{repo}/commit/{commit_number}"
         )
-    post_comment_to_last_commit(message, repo)
+    )
 
 
-def dummy_send_tasks_to_check(tasks):
+def test_run_for_github_token():
     """
-    Функция делает
-    git add .
-    git commit
-    git push
-    для добавления изменений на Github.
-    В коммит добавляются всеефайлы в текущем каталоге.
-
-    После этого к этому коммиту добавляется сообщение о том,
-    что задания сдаются на проверку с помощью функции post_comment_to_last_commit.
+    Функция добавляет тестовое сообщение к последнему за 2 недели коммиту
     """
-    message = f"Сделаны задания 25 {' '.join(tasks)}"
-
-    call_command(f"git add .")
-    call_command(f'git commit -m "{message}"')
-    call_command(f"git push origin {DEFAULT_BRANCH}")
-
-    git_remote = call_command("git remote -v", return_stdout=True)
-    repo_match = re.search(r"online-\d+-\w+-\w+", git_remote)
-    if repo_match:
-        repo = repo_match.group()
-    else:
-        raise PynengError(
-            red(
-                "Не найден репозиторий online-11-имя-фамилия. "
-                "pyneng надо вызывать в репозитории подготовленном для курса."
-            )
+    message = "Проверка работы токена прошла успешно"
+    repo = get_repo()
+    last = post_comment_to_last_commit(message, repo)
+    commit_number = re.search(r'"(\w+)"', str(last)).group(1)
+    print(
+        green(
+            f"Комментарий можно посмотреть по ссылке "
+            f"https://github.com/pyneng/{repo}/commit/{commit_number}"
         )
-    post_comment_to_last_commit(message, repo)
+    )
 
 
 def current_chapter_id():
     """
     Функция возвращает номер текущего раздела, где вызывается pyneng.
     """
-    pth = str(pathlib.Path().absolute())
-    last_dir = os.path.split(pth)[-1]
-    current_chapter = int(last_dir.split("_")[0])
+    current_chapter_name = current_dir_name()
+    if current_chapter_name in DB_TASK_DIRS:
+        current_chapter_name = TASK_DIRS[-1]
+    current_chapter = int(current_chapter_name.split("_")[0])
     return current_chapter
 
 
@@ -391,24 +408,32 @@ def copy_answer_files(passed_tasks, pth):
 )
 @click.option("--debug", is_flag=True, help="Показывать traceback исключений")
 @click.option("--default-branch", "-b", default="main")
-def cli(tasks, disable_verbose, answer, check, debug, default_branch):
+@click.option("--test-token", is_flag=True, help="Проверить работу токена")
+@click.option(
+    "--all", "git_add_all", is_flag=True, help="Добавлять на GitHub все файлы в текущем каталоге: git add ."
+)
+def cli(tasks, disable_verbose, answer, check, debug, default_branch, test_token, git_add_all):
     """
     Запустить тесты для заданий TASKS. По умолчанию запустятся все тесты.
 
     Примеры запуска:
 
     \b
-        pyneng            запустить все тесты для текущего раздела
-        pyneng 1,2a,5     запустить тесты для заданий 1, 2a и 5
-        pyneng 1,2a-c,5   запустить тесты для заданий 1, 2a, 2b, 2c и 5
-        pyneng 1,2*       запустить тесты для заданий 1, все задания 2 с буквами и без
-        pyneng 1,3-5      запустить тесты для заданий 1, 3, 4, 5
-        pyneng 1-5 -a     запустить тесты и записать ответы на задания,
-                          которые прошли тесты, в файлы answer_task_x.py
-        pyneng 1-5 -c     запустить тесты и сдать на проверку задания,
-                          которые прошли тесты.
-        pyneng -a -c      запустить все тесты, записать ответы на задания
-                          и сдать на проверку задания, которые прошли тесты.
+        pyneng --test-token проверить работу токена
+        pyneng              запустить все тесты для текущего раздела
+        pyneng 1,2a,5       запустить тесты для заданий 1, 2a и 5
+        pyneng 1,2a-c,5     запустить тесты для заданий 1, 2a, 2b, 2c и 5
+        pyneng 1,2*         запустить тесты для заданий 1, все задания 2 с буквами и без
+        pyneng 1,3-5        запустить тесты для заданий 1, 3, 4, 5
+        pyneng 1-5 -a       запустить тесты и записать ответы на задания,
+                            которые прошли тесты, в файлы answer_task_x.py
+        pyneng 1-5 -c       запустить тесты и сдать на проверку задания,
+                            которые прошли тесты.
+        pyneng -a -c        запустить все тесты, записать ответы на задания
+                            и сдать на проверку задания, которые прошли тесты.
+        pyneng 1-5 -c --all запустить тесты и сдать на проверку задания,
+                            которые прошли тесты, но при этом загрузить на github все изменения
+                            в текущем каталоге
 
     Флаг -d отключает подробный вывод pytest, который включен по умолчанию.
     Флаг -a записывает ответы в файлы answer_task_x.py, если тесты проходят.
@@ -424,6 +449,10 @@ def cli(tasks, disable_verbose, answer, check, debug, default_branch):
         "Для сдачи заданий на проверку надо сгенерировать токен github. "
         "Подробнее в инструкции: https://pyneng.github.io/docs/pyneng-prepare/"
     )
+    if test_token:
+        test_run_for_github_token()
+        print(green("Проверка токена прошла успешно"))
+        raise click.Abort()
 
     if not debug:
         sys.excepthook = exception_handler
@@ -441,43 +470,27 @@ def cli(tasks, disable_verbose, answer, check, debug, default_branch):
     if answer or check:
         pytest_args = [*pytest_args_common, "--tb=no"]
 
-    # запуск pytest
-    if tasks == "all":
-        pytest.main(pytest_args, plugins=[json_plugin])
-    elif type(tasks) == dict:  # 25_db
-        print(green("Для заданий 25го раздела нет тестов"))
-    else:
-        pytest.main(tasks + pytest_args, plugins=[json_plugin])
+    # после обработки CustomTasksType, получаем два списка файлов
+    test_files, tasks_without_tests = tasks
 
-    # для заданий 25го раздела делается глупое добавление всех файлов
-    if type(tasks) == dict:  # 25_db
+    # запуск pytest
+    pytest.main(test_files + pytest_args, plugins=[json_plugin])
+
+    # получить результаты pytest в формате JSON
+    # passed_tasks это задания у которых есть тесты и тесты прошли
+    passed_tasks = parse_json_report(json_plugin.report)
+
+    if passed_tasks or tasks_without_tests:
+        # скопировать ответы в файлы answer_task_x.py
         if answer:
-            raise PynengError(
-                red(
-                    "Задания 25_db без автоматических ответов. Проверка выполняется "
-                    "вручную и вместе с проверкой выкладываются ответы"
-                )
-            )
+            copy_answers(passed_tasks)
+
+        # сдать задания на проверку через github API
         if check:
             token = os.environ.get("GITHUB_TOKEN")
             if not token:
                 raise PynengError(token_error)
-            dummy_send_tasks_to_check(tasks[25])
-    else:
-        # получить результаты pytest в формате JSON
-        passed_tasks = parse_json_report(json_plugin.report)
-
-        if passed_tasks:
-            # скопировать ответы в файлы answer_task_x.py
-            if answer:
-                copy_answers(passed_tasks)
-
-            # сдать задания на проверку через github API
-            if check:
-                token = os.environ.get("GITHUB_TOKEN")
-                if not token:
-                    raise PynengError(token_error)
-                send_tasks_to_check(passed_tasks)
+            send_tasks_to_check(passed_tasks + tasks_without_tests, git_add_all)
 
 
 if __name__ == "__main__":

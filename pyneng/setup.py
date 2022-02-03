@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
     name="pyneng",
-    version="1.4",
+    version="1.7",
     py_modules=["pyneng"],
     install_requires=[
         "Click",
