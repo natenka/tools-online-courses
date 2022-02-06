@@ -227,7 +227,7 @@ def send_tasks_to_check(passed_tasks, git_add_all=False):
     что задания сдаются на проверку с помощью функции post_comment_to_last_commit.
     """
     ok_tasks = [
-        re.sub(r".*(task_\d+_\d+.py)", r"\1", filename)
+        re.sub(r".*(task_\d+_\w+.py)", r"\1", filename)
         for filename in passed_tasks
     ]
     tasks_num_only = sorted(
