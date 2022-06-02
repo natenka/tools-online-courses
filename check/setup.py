@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
     name="check",
-    version="1.0",
+    version="1.3",
     py_modules=["check"],
     install_requires=[
         "Click",

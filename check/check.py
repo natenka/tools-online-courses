@@ -201,12 +201,13 @@ def post_comment_to_last_commit(msg, delta_days=14):
 def upload_checked_tasks(tasks):
     message = (
         f"Проверены задания {tasks}. Всё отлично!\n"
-        "Не забудьте посмотреть варианты решения\n"
+        "Не забудьте посмотреть варианты решения и комментарии в проверке\n"
+        "Как посмотреть варианты решения:"
         "```\n"
         "pyneng -a\n"
         "```\n\n"
-        "Как посмотреть проверенные задания на github: https://pyneng.github.io/docs/task-check-github/\n"
-        "в командной строке: https://pyneng.github.io/docs/checked-tasks-git/\n"
+        "Как посмотреть проверенные задания:\n* [на github](https://pyneng.github.io/docs/task-check-github/)\n"
+        "* [в командной строке](https://pyneng.github.io/docs/checked-tasks-git/)\n"
     )
     c_message = f"Проверены задания {tasks}"
     call_command("git add .")
