@@ -12,7 +12,7 @@ class HelpTable(Footer):
     def make_key_text(self) -> Text:
         """Create text containing all the keys."""
         text = Text(
-            style="white on dark_green",
+            style="black on green",
             no_wrap=True,
             overflow="ellipsis",
             justify="left",

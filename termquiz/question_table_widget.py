@@ -15,21 +15,21 @@ class QuestionTable(Widget):
 
     def __init__(
         self,
-        chapter_questions,
+        topic_questions,
         show_answer=False,
         check_answer=None,
     ):
         super().__init__()
         self.current_question_number = 0
-        self.chapter_questions = chapter_questions
-        self.current_question_dict = self.chapter_questions[self.current_question_number]
-        self.question_count = len(self.chapter_questions)
+        self.topic_questions = topic_questions
+        self.current_question_dict = self.topic_questions[self.current_question_number]
+        self.question_count = len(self.topic_questions)
         self.show_answer = show_answer
         self.check_answer = check_answer
 
     def watch_current_question_number(self, value: str) -> None:
         """Called when self.current_question_number is modified."""
-        self.current_question_dict = self.chapter_questions[self.current_question_number]
+        self.current_question_dict = self.topic_questions[self.current_question_number]
 
     async def update(
         self,
@@ -49,7 +49,9 @@ class QuestionTable(Widget):
 
     def render(self):
         # Prepare info
-        question_code = self._add_syntax_highlight(self.current_question_dict.get("code", ""))
+        question_code = self._add_syntax_highlight(
+            self.current_question_dict.get("code", "")
+        )
         enter_number_prompt = self._format_enter_number_prompt()
 
         # Answers table
@@ -80,9 +82,9 @@ class QuestionTable(Widget):
             style = "black on green"
         elif self.check_answer and self.check_answer == row_number:
             if self.check_answer == q_correct_answer:
-                style="black on green"
+                style = "black on green"
             elif self.check_answer != q_correct_answer:
-                style="black on red"
+                style = "black on red"
         return style
 
     def _format_enter_number_prompt(self):
