@@ -1,3 +1,5 @@
+import os
+
 from textual.app import App
 
 from question_table_widget import QuestionTable
@@ -18,8 +20,6 @@ class TermQuiz(App):
             "r": ("retry", "Попробовать еще раз тот же вопрос"),
             "s": ("start", "Начать сначала"),
             "h": ("help", "Toggle help"),
-            "right": ("next", "Следующий вопрос"),
-            "left": ("previous", "Предыдущий вопрос"),
         }
         await self.bind("ctrl+q", "quit", "quit")
         await self.bind("a", f"answer('show')", "answer", key_display="Показать ответ")
@@ -65,9 +65,9 @@ class TermQuiz(App):
 
 def main():
     # windows https://github.com/Textualize/textual/discussions/335
-    # os.system("")
-    # TermQuiz.run(log="textual.log")
+    os.system("")
     TermQuiz.run()
+    # TermQuiz.run(log="textual.log")
 
 
 if __name__ == "__main__":

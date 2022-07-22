@@ -53,7 +53,7 @@ class QuestionTable(Widget):
         enter_number_prompt = self._format_enter_number_prompt()
 
         # Answers table
-        answers_table = Table(box=box.MINIMAL, min_width=50)
+        answers_table = Table(box=box.SIMPLE, min_width=50)
         answers_table.add_column("Номер ответа", justify="center", no_wrap=True)
         answers_table.add_column("Ответ", justify="left")
         for num, answer in self.current_question_dict["answers"].items():
@@ -95,9 +95,9 @@ class QuestionTable(Widget):
         if self.check_answer:
             enter_number_prompt = f"Введите номер ответа: {self.check_answer} "
             if self.check_answer == q_correct_answer:
-                enter_number_prompt += "[green]правильный ответ"
+                enter_number_prompt += "[black on green]правильный ответ"
             else:
-                enter_number_prompt += "[red]неправильный ответ"
+                enter_number_prompt += "[black on red]неправильный ответ"
         return enter_number_prompt
 
     def _add_syntax_highlight(self, question_code):
