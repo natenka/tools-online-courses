@@ -27,11 +27,12 @@ class SelectQuestionTable(Widget):
                 topics_table.add_row(key, topic)
 
         main_table = Table(expand=True, show_header=False, box=None)
-        main_table.add_row(f"Выберите тему из диапазона 1-{max(self.key_topic_map)}")
+        main_table.add_row("Выберите тему и нажмите Enter")
         main_table.add_row(topics_table)
         if self.current_topic and self.current_topic not in self.key_topic_map:
             main_table.add_row(
-                f"Выберите вопросы из диапазона 1-{max(self.key_topic_map)}",
+                f"Выберите вопросы из диапазона {', '.join(self.key_topic_map)}.\n"
+                f"Нажмите Enter чтобы сбить введенные числа",
                 style="black on red",
             )
         return Padding(main_table, 3)

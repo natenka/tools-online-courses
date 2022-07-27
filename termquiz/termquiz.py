@@ -1,5 +1,4 @@
 import os
-import asyncio
 
 from textual.app import App
 
@@ -17,22 +16,41 @@ class TermQuiz(App):
         self.all_topics = ALL_QA
         self.current_topic = None
         self.current_topic_questions = None
+        self.digits_key = ""
 
     async def on_mount(self) -> None:
         self.topics_table = SelectQuestionTable(ALL_QA)
         await self.view.dock(self.topics_table)
 
     async def on_key(self, event):
-        if self.current_topic is None and event.key.isdigit():
-            self.current_topic = self.topics_table.key_topic_map.get(event.key)
-            await self.topics_table.update(selected_topic=event.key)
-            await asyncio.sleep(0.5)
-            if self.current_topic:
-                self.current_topic_questions = self.all_topics[self.current_topic]
-                await self.load_q_table()
+        # Select topic table
+        if self.current_topic is None:
+            if event.key.isdigit():
+                self.digits_key += event.key
+                await self.topics_table.update(selected_topic=self.digits_key)
+            elif event.key == "enter":
+                key = self.digits_key
+                self.digits_key = ""
+                self.current_topic = self.topics_table.key_topic_map.get(key)
+                await self.topics_table.update(selected_topic=key)
+                if self.current_topic:
+                    self.current_topic_questions = self.all_topics[self.current_topic]
+                    await self.load_q_table()
 
-        elif event.key.isdigit():
-            await self.q_table.update(check_answer=event.key)
+        # Question table
+        else:
+            current_question_dict = self.q_table.current_question_dict
+            mult_choice = current_question_dict.get("multiple_choices")
+            if event.key.isdigit():
+                if not mult_choice:
+                    self.digits_key = event.key
+                else:
+                    self.digits_key += event.key
+                await self.q_table.update(selected_answer=self.digits_key)
+            elif event.key == "enter":
+                key = self.digits_key
+                self.digits_key = ""
+                await self.q_table.update(check_answer=key, selected_answer="")
 
     def clear_current_view(self):
         self.view.layout.docks = []
@@ -52,7 +70,8 @@ class TermQuiz(App):
             "r": ("retry", "Попробовать еще раз тот же вопрос"),
             "s": ("start", "Начать сначала"),
             "a": ("answer", "Показать ответ"),
-            "h": ("help", "Toggle help"),
+            "h": ("help", "toggle help"),
+            "i": ("stats", "toggle stats"),
         }
         await self.bind("ctrl+q", "quit", "quit")
         for key, (word, desc) in self.help_dict.items():
@@ -75,10 +94,14 @@ class TermQuiz(App):
         current_question_number = self.q_table.current_question_number
         if step == "help":
             await self.help.toggle()
+        elif step == "stats":
+            await self.q_table.toggle_stats()
         elif step == "answer":
             await self.q_table.update(show_answer=True)
         elif step == "retry":
-            self.q_table.refresh()
+            # retry должен затирать key
+            self.digits_key = ""
+            await self.q_table.update(selected_answer="")
         elif step == "next":
             current_question_number += 1
         elif step == "previous":
