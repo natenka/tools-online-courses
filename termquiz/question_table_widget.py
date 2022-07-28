@@ -136,6 +136,7 @@ class QuestionTable(Widget):
                 self.all_stats[self.current_question_number] = True
             elif set(self.check_answer) & set(q_correct_answer):
                 enter_number_prompt += "[black on yellow]частично правильный ответ"
+                self.all_stats[self.current_question_number] = False
             else:
                 enter_number_prompt += "[black on red]неправильный ответ"
                 self.all_stats[self.current_question_number] = False

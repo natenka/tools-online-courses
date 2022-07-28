@@ -22,7 +22,7 @@ class SelectQuestionTable(Widget):
         topics_table.add_column("Тема", justify="left")
         for key, topic in self.key_topic_map.items():
             if self.current_topic and key == self.current_topic:
-                topics_table.add_row(key, topic, style="black on green")
+                topics_table.add_row(key, topic, style="black on white")
             else:
                 topics_table.add_row(key, topic)
 
