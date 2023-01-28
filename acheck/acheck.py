@@ -11,7 +11,7 @@ import click
 import pytest
 import github
 
-
+ANSWERS = "/home/vagrant/repos/general/advpyneng-answers/"
 DEFAULT_BRANCH = "main"
 chapter_to_folder_map = {
     "1": "01_pytest_basics",
@@ -132,6 +132,36 @@ def copy_tasks_to_task_check(folder_id, task_list):
         result = call_command(command)
 
 
+def copy_answers_to_task_check(folder_id, passed_tasks):
+    folder_name = chapter_to_folder_map[folder_id]
+    path = f"exercises/{folder_name}/"
+    from_path = f"{ANSWERS}exercises/{folder_name}/"
+
+    to_pth = str(pathlib.Path().absolute() / path)
+
+    copy_answer_files(passed_tasks, from_pth, to_pth)
+    print(
+        green(
+            "\nОтветы на задания, которые прошли тесты "
+            "скопированы в файлы answer_task_x.py\n"
+        )
+    )
+
+
+def copy_answer_files(passed_tasks, from_pth, to_pth):
+    for file in passed_tasks:
+        task_name = file.replace("test_", "")
+        task_name = re.search(r"task_\w+\.py", task_name).group()
+
+        answer_name = file.replace("test_", "answer_").replace("task_", "answer_")
+        answer_name = re.search(r"answer_\w+\.py", answer_name).group()
+
+        from_answer = os.path.join(from_pth, task_name)
+        to_answer = os.path.join(to_pth, answer_name)
+        if not os.path.exists(to_answer):
+            shutil.copy2(from_answer, to_answer)
+
+
 def git_create_task_check():
     output = call_command("git branch -a")
     if "task_check" in output:
@@ -197,9 +227,10 @@ def post_comment_to_last_commit(msg, delta_days=14):
 
 def upload_checked_tasks(tasks):
     message = (
-        f"Проверены задания {tasks}. Всё отлично!\n\n"
-        "Как посмотреть проверенные задания на github: https://advpyneng.github.io/docs/task-check-github/\n"
-        "в командной строке: https://advpyneng.github.io/docs/checked-tasks-git/\n"
+        f"Проверены задания {tasks}. Всё отлично!\n"
+        "Варианты решения в файлах answer_x.py.\n\n"
+        "Как посмотреть проверенные задания на github: https://advpyneng.natenka.io/docs/task-check-github/\n"
+        "в командной строке: https://advpyneng.natenka.io/docs/checked-tasks-git/\n"
     )
     c_message = f"Проверены задания {tasks}"
     call_command("git add .")
@@ -240,6 +271,7 @@ def cli(folder_number, tasks, check_done, default_branch):
         for folder in folder_number:
             if folder in chapter_to_folder_map:
                 copy_tasks_to_task_check(folder, tasks)
+				copy_answers_to_task_check(folder, tasks)
             else:
                 print("Такого раздела нет", folder)
 
