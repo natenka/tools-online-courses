@@ -5,7 +5,9 @@ import re
 import subprocess
 from glob import glob
 import pathlib
+import shutil
 from datetime import datetime, timedelta
+import time
 
 import click
 import pytest
@@ -130,21 +132,25 @@ def copy_tasks_to_task_check(folder_id, task_list):
 
     for command in git_commands:
         result = call_command(command)
+    time.sleep(2)
+    copy_answers_to_task_check(folder_id, task_list)  # NEW
 
 
 def copy_answers_to_task_check(folder_id, passed_tasks):
+    print("\n\n>>>>> copy_answers_to_task_check\n\n")
     folder_name = chapter_to_folder_map[folder_id]
+    if passed_tasks == "all":
+        passed_tasks = glob(f"exercises/{folder_name}/task_*.py")
+
     path = f"exercises/{folder_name}/"
     from_path = f"{ANSWERS}exercises/{folder_name}/"
 
     to_pth = str(pathlib.Path().absolute() / path)
 
-    copy_answer_files(passed_tasks, from_pth, to_pth)
+    copy_answer_files(passed_tasks, from_path, to_pth)
     print(
-        green(
-            "\nОтветы на задания, которые прошли тесты "
-            "скопированы в файлы answer_task_x.py\n"
-        )
+        "\nОтветы на задания, которые прошли тесты "
+        "скопированы в файлы answer_task_x.py\n"
     )
 
 
@@ -158,6 +164,9 @@ def copy_answer_files(passed_tasks, from_pth, to_pth):
 
         from_answer = os.path.join(from_pth, task_name)
         to_answer = os.path.join(to_pth, answer_name)
+        if not os.path.exists(from_answer):
+            print(f"ERROR: no answer {from_answer}")
+            continue
         if not os.path.exists(to_answer):
             shutil.copy2(from_answer, to_answer)
 
@@ -271,7 +280,7 @@ def cli(folder_number, tasks, check_done, default_branch):
         for folder in folder_number:
             if folder in chapter_to_folder_map:
                 copy_tasks_to_task_check(folder, tasks)
-                copy_answers_to_task_check(folder, tasks)
+                # copy_answers_to_task_check(folder, tasks)
             else:
                 print("Такого раздела нет", folder)
 
