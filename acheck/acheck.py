@@ -271,7 +271,7 @@ def cli(folder_number, tasks, check_done, default_branch):
         for folder in folder_number:
             if folder in chapter_to_folder_map:
                 copy_tasks_to_task_check(folder, tasks)
-				copy_answers_to_task_check(folder, tasks)
+                copy_answers_to_task_check(folder, tasks)
             else:
                 print("Такого раздела нет", folder)
 
