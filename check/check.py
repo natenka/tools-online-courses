@@ -151,7 +151,7 @@ def run_tests(folder_number, task_list):
         task_path = f"exercises/{folder_name}/"
         os.chdir(task_path)
 
-        pytest_args = ["--disable-warnings", "--no-hints", "--tb=no"]
+        pytest_args = ["--disable-warnings", "--tb=no"]
         if task_list == "all":
             pytest.main(pytest_args)
         else:
@@ -206,8 +206,8 @@ def upload_checked_tasks(tasks):
         "```\n"
         "pyneng -a\n"
         "```\n\n"
-        "Как посмотреть проверенные задания:\n* [на github](https://pyneng.github.io/docs/task-check-github/)\n"
-        "* [в командной строке](https://pyneng.github.io/docs/checked-tasks-git/)\n"
+        "Как посмотреть проверенные задания:\n* [на github](https://pyneng.natenka.io/docs/task-check-github/)\n"
+        "* [в командной строке](https://pyneng.natenka.io/docs/checked-tasks-git/)\n"
     )
     c_message = f"Проверены задания {tasks}"
     call_command("git add .")
